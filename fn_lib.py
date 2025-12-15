@@ -68,7 +68,11 @@ def wPDF(cities):
         counts, binlabels = Weights2Time(city, hist=True)
         ax[i, j].set_xscale('log')
         ax[i, j].set_yscale('log')
-        ax[i, j].plot(binlabels[1:], counts/counts.sum(),'o',markersize=4, linewidth=2)
+        ax[i, j].plot(binlabels[1:], counts/counts.sum(),'o',
+                        color='red',
+                        markersize=4, 
+                        linewidth=2)
+        ax[i, j].set_title(city)
         # ax[i, j].set_ylim(0, 1)
         # ax[i, j].set_xlim(0,1)
     return fig, ax
