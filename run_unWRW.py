@@ -8,23 +8,6 @@ import os
 plt.rcParams['text.usetex'] = True
 
 
-# def unW_RW(G0, n, tmax):
-#     A = nx.adjacency_matrix(G0).toarray()
-#     n0 = np.random.choice(A.shape[0], n)
-#     x = np.zeros((n, tmax), dtype=int)
-#     x[:, 0] = n0
-#     for t in tqdm(range(1, tmax)):
-
-#         xt = x[:, t-1]         
-#         Aw = A[xt]             
-#         deg = Aw.sum(axis=1)   
-#         # # optional safety (isolated nodes)
-#         # deg[deg == 0] = 1
-#         T = Aw / deg[:, None]
-#         r = np.random.rand(n)
-#         Tcdf = np.cumsum(T, axis=1)
-#         x[:, t] = (Tcdf >= r[:, None]).argmax(axis=1) #ITS updation
-#     return x
 
 def unW_RW_EL(G, n, tmax):
     # preserve original node labels
@@ -51,7 +34,60 @@ def unW_RW_EL(G, n, tmax):
 
     return x, idx2node
 
-import numpy as np
+def unW_RW_EL_nonbacktrack_deg2(G, n, tmax):
+    # preserve original node labels
+    original_nodes = list(G.nodes)
+
+    G = nx.convert_node_labels_to_integers(G)
+    N = G.number_of_nodes()
+
+    idx2node = dict(enumerate(original_nodes))
+
+    # adjacency list
+    neighbors = {i: list(G.neighbors(i)) for i in range(N)}
+
+    x = np.zeros((n, tmax), dtype=int)
+    x[:, 0] = np.random.choice(N, n)
+
+    for t in tqdm(range(1, tmax)):
+        xt_prev = x[:, t - 1]
+
+        for i in range(n):
+            u = xt_prev[i]
+            nbrs = neighbors[u]
+            deg = len(nbrs)
+
+            # isolated node
+            if deg == 0:
+                x[i, t] = u
+                continue
+
+            # no previous history available
+            if t == 1:
+                x[i, t] = np.random.choice(nbrs)
+                continue
+
+            v = x[i, t - 2]  # previous node
+
+            # degree-1 node: forced move
+            if deg == 1:
+                x[i, t] = nbrs[0]
+
+            # degree-2 node: non-backtracking
+            elif deg == 2:
+                if v == nbrs[0]:
+                    x[i, t] = nbrs[1]
+                elif v == nbrs[1]:
+                    x[i, t] = nbrs[0]
+                else:
+                    # came from elsewhere (rare but possible)
+                    x[i, t] = np.random.choice(nbrs)
+
+            # all other cases: standard RW
+            else:
+                x[i, t] = np.random.choice(nbrs)
+
+    return x, idx2node
 
 def PopNodes(X, idx2node, q=20):
 
@@ -111,39 +147,40 @@ if __name__ == "__main__":
     # cities = [city for city in cities if city[:3] not in completed_cities]
     # print(cities)
     
-    for city in tqdm(cities, total=len(cities)): 
-        city = city[:3] 
-        G0 = OpenGraph(city) 
-        n = int(1e2); tmax = int(1e2) 
-        # X = unW_RW_EL(G0, n, tmax) 
-        # np.savez_compressed(f"./RW_data/RW_{city}_n{n}_t{tmax}.npz", arr=X)
-        X, idx2node = unW_RW_EL(G0, n, tmax)
-        print("check 1/3: simulation executed")
-        np.savez_compressed(
-            f"./RW_data/RW_{city}_n{n}_t{tmax}.npz",
-            X=X,
-            idx2node=np.array([idx2node[i] for i in range(len(idx2node))])
-        )
-        print("fcheck 2/3: ile saved")
-        topNPlotMap(city, X, idx2node)
-        print("check 3/3: map plotted and saved")
-
-# def unWRWplot(n, tmax, source="graph",G0=None, filename=None):
-#     if source=="graph":
-#         X = unW_RW(G0, n, tmax)
-#     elif source == "file":
-#         X = np.load(f"./{filename}")['arr']
-#     N = np.unique(X)
-#     n = X.shape[0]
-
-#     P = np.zeros((N, tmax), dtype=float)
-
-#     rows = X.ravel()                                  # node indices
-#     cols = np.repeat(np.arange(tmax), n)              # time indices
-
-#     np.add.at(P, (rows, cols), 1)
-#     P /= n
-
-#     plt.imshow(P, vmin=0, vmax=1, aspect="auto")
+# _________________________________
+#   SINGLE CITY RUN
+    city = cities[0][:3] 
+    G0 = OpenGraph(city) 
+    n = int(1e2); tmax = int(1e2) 
+    # X = unW_RW_EL(G0, n, tmax) 
+    # np.savez_compressed(f"./RW_data/RW_{city}_n{n}_t{tmax}.npz", arr=X)
+    X, idx2node = unW_RW_EL(G0, n, tmax)
+    print("check 1/3: simulation executed")
+    np.savez_compressed(
+        f"./RW_data/RW_{city}_n{n}_t{tmax}.npz",
+        X=X,
+        idx2node=np.array([idx2node[i] for i in range(len(idx2node))])
+    )
+    print("fcheck 2/3: ile saved")
+    topNPlotMap(city, X, idx2node)
+    print("check 3/3: map plotted and saved")
     
-#     return None
+    
+# _________________________________
+#   BULK RUN
+    # for city in tqdm(cities, total=len(cities)): 
+    #     city = city[:3] 
+    #     G0 = OpenGraph(city) 
+    #     n = int(1e2); tmax = int(1e2) 
+    #     # X = unW_RW_EL(G0, n, tmax) 
+    #     # np.savez_compressed(f"./RW_data/RW_{city}_n{n}_t{tmax}.npz", arr=X)
+    #     X, idx2node = unW_RW_EL(G0, n, tmax)
+    #     print("check 1/3: simulation executed")
+    #     np.savez_compressed(
+    #         f"./RW_data/RW_{city}_n{n}_t{tmax}.npz",
+    #         X=X,
+    #         idx2node=np.array([idx2node[i] for i in range(len(idx2node))])
+    #     )
+    #     print("fcheck 2/3: ile saved")
+    #     topNPlotMap(city, X, idx2node)
+    #     print("check 3/3: map plotted and saved")

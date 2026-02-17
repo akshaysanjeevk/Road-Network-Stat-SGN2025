@@ -15,7 +15,7 @@ def ExtractGraph(City, code):
     print(f"V = {V} \n E= {E}")
     return G 
 
-def OpenGraph(citycode):
+def OpenGraph(citycode):    
     with open(f"./graph_data/{citycode}.gpickle", "rb") as file:
         G = pickle.load(file)
     # V,E = nx.number_of_nodes(G), nx.number_of_edges(G)

@@ -42,13 +42,13 @@ city_codes = [
     "NAG",
     "VIZ"
 ]
-#modify the following block accordingly
-# if __name__ == None:
+# modify the following block accordingly
+if __name__ == None:
         
-#     for city in tqdm(city_codes, total=len(city_codes)):
-#         # print(city, city_codes[i])
-#         tempG = ExtractGraph(city, code)
-#         temFig = kPDF(tempG, city, save=True)
-#         plt.close()
-#         del tempG
-#         # del tempFig
+    for city in tqdm(city_codes, total=len(city_codes)):
+        # print(city, city_codes[i])
+        tempG = ExtractGraph(city, code)
+        temFig = kPDF(tempG, city, save=True)
+        plt.close()
+        del tempG
+        # del tempFig
